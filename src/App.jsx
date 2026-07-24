@@ -49,7 +49,10 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    // basename must match Vite's `base` (import.meta.env.BASE_URL) — without
+    // it, react-router builds absolute paths like /pos instead of
+    // /Bill360/pos, which 404s on GitHub Pages once you navigate or refresh.
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Toaster richColors position="top-right" />
       <Routes>
         <Route path="/login" element={<Login />} />
