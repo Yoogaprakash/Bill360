@@ -1,0 +1,30 @@
+<!doctype html>
+<!--
+  GitHub Pages serves this file for any unknown path (a deep link, or a
+  browser refresh on e.g. /pos). It encodes the intended URL into the query
+  string and redirects to the SPA's root, where the inline script in
+  index.html decodes it and hands the route back to react-router.
+  Pattern: https://github.com/rafgraph/spa-github-pages
+
+  pathSegmentsToKeep = 1 is correct for a project page
+  (https://<user>.github.io/<repo>/...). If you deploy this as a user/org
+  root page (https://<user>.github.io/...) instead, set it to 0.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bill360</title>
+    <script>
+      var pathSegmentsToKeep = 1
+      var l = window.location
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      )
+    </script>
+  </head>
+  <body></body>
+</html>
