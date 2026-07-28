@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
 import { formatCurrencyForPdf } from '@/lib/utils'
+import { checkUsageLimit } from '@/lib/usageLimit'
 
 const COLUMNS = ['Type', 'Ref #', 'Name', 'Mobile No', 'Date', 'Method', 'Amount', 'Balance']
 
@@ -74,8 +75,9 @@ function exportPdf(entries) {
   doc.save(`bill360-credit-debit-${Date.now()}.pdf`)
 }
 
-export function exportLedger(entries, format) {
+export async function exportLedger(entries, format, companyId) {
   if (entries.length === 0) return
+  if (!(await checkUsageLimit(companyId, 'report_print'))) return
   if (format === 'xlsx') return exportXlsx(entries)
   if (format === 'pdf') return exportPdf(entries)
 }

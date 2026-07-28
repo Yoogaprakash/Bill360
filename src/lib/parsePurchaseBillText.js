@@ -4,6 +4,8 @@
 // everything else for the user to fix in the editable items table that
 // follows — this is a starting draft, not a reliable structured extraction.
 const NUMBER_RE = /-?\d+(?:[.,]\d+)?/g
+// Indian mobile numbers, optionally with +91/0 prefix, optionally labeled.
+const PHONE_RE = /(?:\+?91[-\s]?|0)?([6-9]\d{9})\b/
 
 export function parsePurchaseBillText(rawText) {
   const lines = rawText
@@ -12,6 +14,15 @@ export function parsePurchaseBillText(rawText) {
     .filter(Boolean)
 
   const supplierNameGuess = lines[0]?.slice(0, 80) || ''
+
+  let supplierPhoneGuess = ''
+  for (const line of lines) {
+    const match = line.match(PHONE_RE)
+    if (match) {
+      supplierPhoneGuess = match[1]
+      break
+    }
+  }
 
   const items = []
   for (const line of lines) {
@@ -22,7 +33,7 @@ export function parsePurchaseBillText(rawText) {
     // that are almost entirely numeric (likely a totals/date/GSTIN line).
     const name = line.replace(NUMBER_RE, '').replace(/[.,;:\-x×@=]+/g, ' ').trim()
     if (name.length < 3) continue
-    if (/total|subtotal|gst|tax|amount|balance|invoice|date|gstin|phone|no\.?\s*:/i.test(name)) continue
+    if (/total|subtotal|gst|tax|amount|balance|invoice|date|gstin|phone|mobile|contact|tel\.?\s*:|no\.?\s*:/i.test(name)) continue
 
     const nums = numbers.map((n) => Number(n.replace(',', '')))
     const last = nums[nums.length - 1]
@@ -45,5 +56,5 @@ export function parsePurchaseBillText(rawText) {
     })
   }
 
-  return { supplierNameGuess, items }
+  return { supplierNameGuess, supplierPhoneGuess, items }
 }

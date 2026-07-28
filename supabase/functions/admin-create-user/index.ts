@@ -73,6 +73,25 @@ Deno.serve(async (req) => {
         throw new Error('Not authorized to create users')
       }
 
+      if (targetCompanyId) {
+        const { data: companyRow } = await admin
+          .from('companies')
+          .select('user_limit_override, subscription_plans(user_limit)')
+          .eq('id', targetCompanyId)
+          .single()
+        const userLimit = companyRow?.user_limit_override ?? companyRow?.subscription_plans?.user_limit ?? null
+        if (userLimit !== null) {
+          const { count } = await admin
+            .from('profiles')
+            .select('id', { count: 'exact', head: true })
+            .eq('company_id', targetCompanyId)
+            .eq('is_active', true)
+          if ((count ?? 0) >= userLimit) {
+            throw new Error(`User limit reached (${count} of ${userLimit} used). Ask a super admin to raise your plan or limit.`)
+          }
+        }
+      }
+
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email,
         password,

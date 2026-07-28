@@ -1,7 +1,11 @@
 import { supabase } from '@/lib/supabase'
 import { generateInvoicePdf } from '@/lib/generateInvoicePdf'
+import { checkUsageLimit } from '@/lib/usageLimit'
 
 export async function reprintBill(bill, company) {
+  const allowed = await checkUsageLimit(bill.company_id || company?.id, 'bill_print')
+  if (!allowed) return
+
   const { data: items, error } = await supabase
     .from('bill_items')
     .select('*')

@@ -12,6 +12,7 @@ import {
   Receipt,
   Building2,
   ShieldCheck,
+  CreditCard,
   Menu,
   X,
   LogOut,
@@ -71,6 +72,7 @@ const NAV = {
   ],
   super_admin: [
     { to: '/companies', label: 'Companies', icon: Building2 },
+    { to: '/subscription-plans', label: 'Subscription Plans', icon: CreditCard },
     { to: '/platform-users', label: 'Platform Users', icon: ShieldCheck },
   ],
 }

@@ -139,6 +139,7 @@ export default function Purchases() {
           categories={categories}
           initialItems={scannedDraft?.items}
           initialSupplierName={scannedDraft?.supplierNameGuess}
+          initialSupplierPhone={scannedDraft?.supplierPhoneGuess}
           source={scannedDraft ? 'scanned' : 'manual'}
           onSaved={refresh}
           onProductsChanged={refreshProducts}

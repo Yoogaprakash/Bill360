@@ -26,6 +26,7 @@ import Purchases from '@/pages/admin/Purchases'
 import CreditReport from '@/pages/admin/CreditReport'
 import CreditDebitLedger from '@/pages/admin/CreditDebitLedger'
 import Companies from '@/pages/superadmin/Companies'
+import SubscriptionPlans from '@/pages/superadmin/SubscriptionPlans'
 import PlatformUsers from '@/pages/superadmin/PlatformUsers'
 
 function App() {
@@ -99,6 +100,7 @@ function App() {
 
             <Route element={<ProtectedRoute roles={['super_admin']} />}>
               <Route path="/companies" element={<Companies />} />
+              <Route path="/subscription-plans" element={<SubscriptionPlans />} />
               <Route path="/platform-users" element={<PlatformUsers />} />
             </Route>
           </Route>

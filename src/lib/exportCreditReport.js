@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
 import { formatCurrencyForPdf } from '@/lib/utils'
+import { checkUsageLimit } from '@/lib/usageLimit'
 
 const COLUMNS = ['Bill No', 'Date', 'Customer', 'Phone', 'Status', 'Grand Total', 'Received', 'Balance Due']
 
@@ -77,8 +78,9 @@ function exportPdf(bills) {
   doc.save(`credit-report-${Date.now()}.pdf`)
 }
 
-export function exportCreditReport(bills, format) {
+export async function exportCreditReport(bills, format, companyId) {
   if (bills.length === 0) return
+  if (!(await checkUsageLimit(companyId, 'report_print'))) return
   if (format === 'csv') return exportCsv(bills)
   if (format === 'xlsx') return exportXlsx(bills)
   if (format === 'pdf') return exportPdf(bills)

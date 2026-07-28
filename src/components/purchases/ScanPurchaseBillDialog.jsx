@@ -15,6 +15,7 @@ export default function ScanPurchaseBillDialog({ open, onOpenChange, onScanned }
   const [progress, setProgress] = useState(0)
   const [rawText, setRawText] = useState('')
   const [parsedCount, setParsedCount] = useState(null)
+  const [phoneGuess, setPhoneGuess] = useState('')
 
   const reset = () => {
     setImage(null)
@@ -22,6 +23,7 @@ export default function ScanPurchaseBillDialog({ open, onOpenChange, onScanned }
     setProgress(0)
     setRawText('')
     setParsedCount(null)
+    setPhoneGuess('')
   }
 
   const handleFile = async (e) => {
@@ -40,8 +42,9 @@ export default function ScanPurchaseBillDialog({ open, onOpenChange, onScanned }
       const { data } = await worker.recognize(file)
       await worker.terminate()
       setRawText(data.text)
-      const { items } = parsePurchaseBillText(data.text)
+      const { items, supplierPhoneGuess } = parsePurchaseBillText(data.text)
       setParsedCount(items.length)
+      setPhoneGuess(supplierPhoneGuess)
     } catch {
       toast.error('OCR failed — you can still type the raw text below manually, or cancel and enter items by hand.')
     } finally {
@@ -50,11 +53,11 @@ export default function ScanPurchaseBillDialog({ open, onOpenChange, onScanned }
   }
 
   const handleUseText = () => {
-    const { supplierNameGuess, items } = parsePurchaseBillText(rawText)
+    const { supplierNameGuess, supplierPhoneGuess, items } = parsePurchaseBillText(rawText)
     if (items.length === 0) {
       toast.error('Couldn’t detect any item lines — try a clearer photo, or continue and add items manually.')
     }
-    onScanned({ supplierNameGuess, items })
+    onScanned({ supplierNameGuess, supplierPhoneGuess, items })
     reset()
     onOpenChange(false)
   }
@@ -85,7 +88,9 @@ export default function ScanPurchaseBillDialog({ open, onOpenChange, onScanned }
           {!scanning && rawText && (
             <div className="space-y-1.5">
               <Label>
-                Extracted text {parsedCount !== null && `— detected ${parsedCount} possible item line(s)`}
+                Extracted text
+                {parsedCount !== null && ` — detected ${parsedCount} possible item line(s)`}
+                {phoneGuess && ` · supplier phone guess: ${phoneGuess}`}
               </Label>
               <Textarea value={rawText} onChange={(e) => setRawText(e.target.value)} rows={6} className="font-mono text-xs" />
               <p className="text-xs text-muted-foreground">

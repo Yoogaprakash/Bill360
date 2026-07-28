@@ -53,9 +53,9 @@ export default function CreditReport() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => exportCreditReport(visibleBills, 'csv')}>CSV</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportCreditReport(visibleBills, 'xlsx')}>Excel (.xlsx)</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportCreditReport(visibleBills, 'pdf')}>PDF</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportCreditReport(visibleBills, 'csv', profile.company_id)}>CSV</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportCreditReport(visibleBills, 'xlsx', profile.company_id)}>Excel (.xlsx)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportCreditReport(visibleBills, 'pdf', profile.company_id)}>PDF</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -27,7 +27,7 @@ function isoToday() {
  * new one — its items load in, and saving recalculates totals and adjusts
  * stock by the delta between the old and new quantities per product.
  */
-export default function NewPurchaseDialog({ open, onOpenChange, products, categories, initialItems, initialSupplierName, source = 'manual', purchase = null, onSaved, onProductsChanged }) {
+export default function NewPurchaseDialog({ open, onOpenChange, products, categories, initialItems, initialSupplierName, initialSupplierPhone, source = 'manual', purchase = null, onSaved, onProductsChanged }) {
   const profile = useAuthStore((s) => s.profile)
   const isEditing = !!purchase
   const [supplierName, setSupplierName] = useState('')
@@ -80,7 +80,7 @@ export default function NewPurchaseDialog({ open, onOpenChange, products, catego
         })
     } else {
       setSupplierName(initialSupplierName || '')
-      setSupplierPhone('')
+      setSupplierPhone(initialSupplierPhone || '')
       setReferenceNo('')
       setPurchaseDate(isoToday())
       setItems(initialItems && initialItems.length > 0 ? initialItems.map((i) => ({ ...blankItem(), ...i })) : [blankItem()])
@@ -88,7 +88,7 @@ export default function NewPurchaseDialog({ open, onOpenChange, products, catego
       setAmountPaid('')
       setPaymentMethod('Cash')
     }
-  }, [open, isEditing, purchase, initialItems, initialSupplierName])
+  }, [open, isEditing, purchase, initialItems, initialSupplierName, initialSupplierPhone])
 
   const allProducts = [...products, ...extraProducts]
 

@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { RefreshCw } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { playBeep } from '@/lib/beep'
 
 const READER_ID = 'bill360-qr-reader'
 const MAX_ELEMENT_WAIT_MS = 2000
@@ -75,12 +76,13 @@ export default function ScanProductDialog({ open, onOpenChange, products, onScan
             (decodedText) => {
               if (handledRef.current) return
               const value = decodedText.trim()
-              const product = products.find((p) => p.sku === value || p.id === value)
+              const product = products.find((p) => p.qr_code === value || p.sku === value || p.id === value)
               if (!product) {
                 toast.error(`No product matches "${value}"`)
                 return
               }
               handledRef.current = true
+              playBeep()
               onScan(product)
               onOpenChange(false)
             },

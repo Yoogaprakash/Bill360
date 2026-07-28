@@ -12,12 +12,14 @@ import {
 import { cn, formatCurrency } from '@/lib/utils'
 import { useCreditDebitLedger } from '@/hooks/useCreditDebitLedger'
 import { exportLedger } from '@/lib/exportLedger'
+import { useAuthStore } from '@/store/authStore'
 
 function isoDate(d) {
   return d.toISOString().slice(0, 10)
 }
 
 export default function CreditDebitLedger() {
+  const profile = useAuthStore((s) => s.profile)
   const [from, setFrom] = useState(isoDate(new Date(Date.now() - 29 * 86400000)))
   const [to, setTo] = useState(isoDate(new Date()))
   const [type, setType] = useState('all') // all | credit | debit
@@ -56,8 +58,8 @@ export default function CreditDebitLedger() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => exportLedger(filtered, 'xlsx')}>Excel (.xlsx)</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportLedger(filtered, 'pdf')}>PDF</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportLedger(filtered, 'xlsx', profile.company_id)}>Excel (.xlsx)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportLedger(filtered, 'pdf', profile.company_id)}>PDF</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

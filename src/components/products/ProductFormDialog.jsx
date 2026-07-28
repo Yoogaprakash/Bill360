@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Boxes } from 'lucide-react'
+import { Boxes, QrCode } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import BatchManagerDialog from '@/components/products/BatchManagerDialog'
+import ProductQrDialog from '@/components/products/ProductQrDialog'
 
 const empty = {
   name: '', brand: '', sku: '', hsn_code: '', category_id: '', unit_price: '', gst_rate: '',
-  stock_qty: '', low_stock_threshold: '', image_url: '', unit_type: 'unit', weight_unit: 'kg',
+  stock_qty: '', low_stock_threshold: '', image_url: '', unit_type: 'unit', weight_unit: 'kg', qr_code: '',
 }
 
 export default function ProductFormDialog({ open, onOpenChange, categories, product, onSaved }) {
@@ -21,6 +23,7 @@ export default function ProductFormDialog({ open, onOpenChange, categories, prod
   const [imageFile, setImageFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [batchesOpen, setBatchesOpen] = useState(false)
+  const [qrPrintOpen, setQrPrintOpen] = useState(false)
 
   useEffect(() => {
     if (product) {
@@ -37,6 +40,7 @@ export default function ProductFormDialog({ open, onOpenChange, categories, prod
         image_url: product.image_url || '',
         unit_type: product.unit_type || 'unit',
         weight_unit: product.weight_unit || 'kg',
+        qr_code: product.qr_code || '',
       })
     } else {
       setForm(empty)
@@ -73,6 +77,7 @@ export default function ProductFormDialog({ open, onOpenChange, categories, prod
         image_url: imageUrl || null,
         unit_type: form.unit_type,
         weight_unit: form.unit_type === 'weight' ? form.weight_unit : null,
+        qr_code: form.qr_code || null,
       }
 
       const { data: saved, error } = product
@@ -89,6 +94,8 @@ export default function ProductFormDialog({ open, onOpenChange, categories, prod
       setSaving(false)
     }
   }
+
+  const qrPreviewValue = form.qr_code || form.sku || product?.id
 
   return (
     <>
@@ -167,6 +174,34 @@ export default function ProductFormDialog({ open, onOpenChange, categories, prod
             <Label>Product image</Label>
             <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
           </div>
+
+          <div className="col-span-2 space-y-3 rounded-lg border p-3">
+            <div className="flex items-center gap-4">
+              <div className="flex-1 space-y-1.5">
+                <Label>QR / barcode value (manual, optional)</Label>
+                <Input
+                  value={form.qr_code}
+                  onChange={(e) => setForm({ ...form, qr_code: e.target.value })}
+                  placeholder="Leave blank to use SKU automatically"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Set this if you already have printed barcodes with your own numbering — scanning that code will match this product.
+                </p>
+              </div>
+              {qrPreviewValue && (
+                <div className="flex shrink-0 flex-col items-center gap-1.5">
+                  <div className="rounded-md border bg-white p-1.5">
+                    <QRCodeSVG value={qrPreviewValue} size={64} />
+                  </div>
+                  {product && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setQrPrintOpen(true)}>
+                      <QrCode className="h-3.5 w-3.5" /> Print
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         <DialogFooter className="sm:justify-between">
           {product ? (
@@ -183,6 +218,9 @@ export default function ProductFormDialog({ open, onOpenChange, categories, prod
     </Dialog>
     {product && (
       <BatchManagerDialog open={batchesOpen} onOpenChange={setBatchesOpen} product={product} />
+    )}
+    {product && (
+      <ProductQrDialog open={qrPrintOpen} onOpenChange={setQrPrintOpen} product={{ ...product, qr_code: form.qr_code, sku: form.sku }} />
     )}
     </>
   )

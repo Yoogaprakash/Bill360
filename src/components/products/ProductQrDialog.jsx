@@ -9,9 +9,10 @@ export default function ProductQrDialog({ open, onOpenChange, product }) {
   // The QR must encode something unique per product to scan reliably — HSN
   // codes are a *tax classification* shared by many unrelated products (e.g.
   // every bag of rice might carry the same HSN), so encoding it would make
-  // scanning ambiguous. SKU (or id as a fallback) is guaranteed unique; HSN
-  // is instead printed as visible text on the label, same as a GST price tag.
-  const value = product.sku || product.id
+  // scanning ambiguous. A manually-set code takes priority (for businesses
+  // with their own existing barcode scheme), then SKU, then id as a fallback
+  // that's always unique. HSN is printed as visible text, same as a GST tag.
+  const value = product.qr_code || product.sku || product.id
 
   const handlePrint = () => {
     const win = window.open('', '_blank', 'width=400,height=500')

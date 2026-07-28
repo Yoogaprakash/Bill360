@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import { useCartStore, computeTotals } from '@/store/cartStore'
 import { generateInvoicePdf } from '@/lib/generateInvoicePdf'
+import { checkUsageLimit } from '@/lib/usageLimit'
 
 const emptyCustomer = { name: '', phone: '', gst: '', address: '' }
 
@@ -153,23 +154,25 @@ export default function CheckoutModal({ open, onOpenChange, gstEnabled, onComple
           )
       )
 
-      generateInvoicePdf({
-        company,
-        bill: {
-          billNumber,
-          customerName: customer.name,
-          customerPhone: customer.phone,
-          customerGst: customer.gst,
-          customerAddress: customer.address,
-          subtotal: totals.subtotal,
-          discountTotal: totals.discountTotal,
-          gstTotal: totals.gstTotal,
-          grandTotal: totals.grandTotal,
-          amountReceived,
-          createdAt: billRow.created_at,
-        },
-        lines: totals.lines,
-      })
+      if (await checkUsageLimit(profile.company_id, 'bill_print')) {
+        generateInvoicePdf({
+          company,
+          bill: {
+            billNumber,
+            customerName: customer.name,
+            customerPhone: customer.phone,
+            customerGst: customer.gst,
+            customerAddress: customer.address,
+            subtotal: totals.subtotal,
+            discountTotal: totals.discountTotal,
+            gstTotal: totals.gstTotal,
+            grandTotal: totals.grandTotal,
+            amountReceived,
+            createdAt: billRow.created_at,
+          },
+          lines: totals.lines,
+        })
+      }
 
       toast.success(
         isCreditSale ? `Bill ${billNumber} generated · ${formatCurrency(balanceDue)} on credit` : `Bill ${billNumber} generated`
