@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { Minus, Plus, Trash2, PlusCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, round2 } from '@/lib/utils'
 import { useCartStore, computeTotals } from '@/store/cartStore'
 
 export default function CartPanel({ gstEnabled, onCheckout, onAddCustom, onClear }) {
@@ -14,6 +15,18 @@ export default function CartPanel({ gstEnabled, onCheckout, onAddCustom, onClear
   const updateQty = useCartStore((s) => s.updateQty)
   const updateDiscount = useCartStore((s) => s.updateDiscount)
   const removeItem = useCartStore((s) => s.removeItem)
+
+  // Custom items have no stockQty (null) and aren't capped. Catalog items are
+  // capped at their available stock, whether changed via +/- or typed in directly.
+  const handleQtyChange = (item, requestedQty) => {
+    const qty = round2(Math.max(0, requestedQty))
+    if (item.stockQty != null && qty > item.stockQty) {
+      toast.error(`Only ${item.stockQty} ${item.uom} in stock`)
+      updateQty(item.key, item.stockQty)
+      return
+    }
+    updateQty(item.key, qty)
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -55,18 +68,25 @@ export default function CartPanel({ gstEnabled, onCheckout, onAddCustom, onClear
 
               <div className="mt-2 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1">
-                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.key, item.qty - item.qtyStep)}>
+                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleQtyChange(item, item.qty - item.qtyStep)}>
                     <Minus className="h-3 w-3" />
                   </Button>
                   <Input
                     type="number"
                     value={item.qty}
                     min={0}
+                    max={item.stockQty ?? undefined}
                     step={item.qtyStep}
-                    onChange={(e) => updateQty(item.key, Number(e.target.value))}
+                    onChange={(e) => handleQtyChange(item, Number(e.target.value))}
                     className="h-7 w-16 text-center"
                   />
-                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.key, item.qty + item.qtyStep)}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={item.stockQty != null && item.qty >= item.stockQty}
+                    onClick={() => handleQtyChange(item, item.qty + item.qtyStep)}
+                  >
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>

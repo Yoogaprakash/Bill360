@@ -188,6 +188,27 @@ export default function CheckoutModal({ open, onOpenChange, gstEnabled, onComple
     }
   }
 
+  // Desktop keeps the cart panel visible alongside this dialog, but on mobile
+  // it's a full-screen sheet that closes once "Generate Bill" is tapped — so
+  // without this, the customer-details/payment steps give no way to see what's
+  // actually in the bill. Shown lg:hidden since desktop already has the panel.
+  const cartSummary = (
+    <div className="lg:hidden mb-1 max-h-32 space-y-1 overflow-y-auto rounded-md border bg-muted/30 p-2 text-xs">
+      {totals.lines.map((l) => (
+        <div key={l.key} className="flex justify-between gap-2">
+          <span className="truncate">
+            {l.name} <span className="text-muted-foreground">× {l.qty} {l.uom}</span>
+          </span>
+          <span className="shrink-0 font-medium">{formatCurrency(l.total)}</span>
+        </div>
+      ))}
+      <div className="flex justify-between border-t pt-1 font-semibold">
+        <span>Total</span>
+        <span>{formatCurrency(totals.grandTotal)}</span>
+      </div>
+    </div>
+  )
+
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : resetAndClose())}>
       <DialogContent>
@@ -197,6 +218,7 @@ export default function CheckoutModal({ open, onOpenChange, gstEnabled, onComple
               <DialogTitle>Customer details</DialogTitle>
               <DialogDescription>Required for the invoice.</DialogDescription>
             </DialogHeader>
+            {cartSummary}
             <div className="space-y-3 py-2">
               <div className="space-y-1.5">
                 <Label>Name *</Label>
@@ -228,6 +250,7 @@ export default function CheckoutModal({ open, onOpenChange, gstEnabled, onComple
               <DialogTitle>Collect payment</DialogTitle>
               <DialogDescription>Bill total is {formatCurrency(totals.grandTotal)}. Reduce the amount below for a partial / credit sale.</DialogDescription>
             </DialogHeader>
+            {cartSummary}
             <div className="flex flex-col items-center gap-3 py-2">
               <div className="w-full max-w-52 space-y-1.5">
                 <Label>Amount received</Label>
