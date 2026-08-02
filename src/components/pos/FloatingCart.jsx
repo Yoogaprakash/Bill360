@@ -16,6 +16,12 @@ export default function FloatingCart({ gstEnabled, onCheckout, onAddCustom, onCl
   const [expanded, setExpanded] = useState(false)
   const [pos, setPos] = useState({ x: 16, y: 16 }) // offset from bottom-right, in px
   const dragState = useRef(null)
+  // Mobile browsers can fire a synthetic "ghost click" ~shortly after a touch
+  // ends, at the same screen coordinates — which, once expanded, land right on
+  // the full-width Generate Bill button (it now occupies the same bottom-right
+  // corner the FAB was just tapped at). Ignoring taps on it for a beat after
+  // opening filters that out without needing the user to notice anything.
+  const openedAtRef = useRef(0)
 
   useEffect(() => {
     // Snap into view if the viewport shrinks below the current offset (e.g. rotation).
@@ -30,6 +36,9 @@ export default function FloatingCart({ gstEnabled, onCheckout, onAddCustom, onCl
   }, [])
 
   const handlePointerDown = (e) => {
+    // Suppresses the browser's compatibility mouse/click events that would
+    // otherwise follow this touch — see the ghost-click note on openedAtRef above.
+    e.preventDefault()
     dragState.current = { startX: e.clientX, startY: e.clientY, origin: { ...pos }, moved: false }
     e.currentTarget.setPointerCapture(e.pointerId)
   }
@@ -49,7 +58,18 @@ export default function FloatingCart({ gstEnabled, onCheckout, onAddCustom, onCl
   const handlePointerUp = () => {
     const wasDrag = dragState.current?.moved
     dragState.current = null
-    if (!wasDrag) setExpanded(true)
+    if (!wasDrag) {
+      openedAtRef.current = Date.now()
+      setExpanded(true)
+    }
+  }
+
+  // Belt-and-suspenders guard for the ghost-click above: even if one slips
+  // through, ignore a Generate Bill tap in the first instant after opening —
+  // a real tap on that button always happens well after the sheet is visible.
+  const guardedCheckout = () => {
+    if (Date.now() - openedAtRef.current < 400) return
+    onCheckout()
   }
 
   if (expanded) {
@@ -67,7 +87,7 @@ export default function FloatingCart({ gstEnabled, onCheckout, onAddCustom, onCl
               scroll region works and the Generate Bill footer stays pinned & visible
               instead of being pushed off-screen and clipped by overflow-hidden. */}
           <div className="min-h-0 flex-1 overflow-hidden">
-            <CartPanel gstEnabled={gstEnabled} onCheckout={onCheckout} onAddCustom={onAddCustom} onClear={onClear} />
+            <CartPanel gstEnabled={gstEnabled} onCheckout={guardedCheckout} onAddCustom={onAddCustom} onClear={onClear} />
           </div>
         </div>
       </div>

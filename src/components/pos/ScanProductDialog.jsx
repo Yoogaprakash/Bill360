@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import { toast } from 'sonner'
-import { RefreshCw, CheckCircle2 } from 'lucide-react'
+import { RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { playBeep } from '@/lib/beep'
+import { playBeep, playDuplicateBeep } from '@/lib/beep'
+import { cn } from '@/lib/utils'
 
 const READER_ID = 'bill360-qr-reader'
 const MAX_ELEMENT_WAIT_MS = 2000
-// How long the "added" overlay stays up, and how long duplicate reads of the
-// same frame are ignored for, before the scanner is ready to catch the next code.
+// How long the "added"/"already scanned" overlay stays up before the scanner
+// is ready to catch the next code.
 const FEEDBACK_MS = 900
+// A held product stays in frame for way longer than one decode — without this,
+// the same barcode gets re-added every ~1s as long as it's in view. Any repeat
+// read of the *same* code within this window is treated as "still the same
+// item, don't add it again", not a fresh scan.
+const DUPLICATE_COOLDOWN_MS = 2500
 
 function describeCameraError(err) {
   if (!window.isSecureContext) {
@@ -50,15 +56,17 @@ export default function ScanProductDialog({ open, onOpenChange, products, onScan
   const scannerRef = useRef(null)
   const handledRef = useRef(false)
   const feedbackTimerRef = useRef(null)
+  const lastScannedRef = useRef({ value: null, ts: 0 })
   const [status, setStatus] = useState('starting') // 'starting' | 'live' | 'error'
   const [errorMessage, setErrorMessage] = useState('')
   const [attempt, setAttempt] = useState(0)
-  const [lastAdded, setLastAdded] = useState(null) // { id, name, ts }
+  const [lastAdded, setLastAdded] = useState(null) // { id, name, ts, duplicate }
   const [scanCount, setScanCount] = useState(0)
 
   useEffect(() => {
     if (!open) return
     handledRef.current = false
+    lastScannedRef.current = { value: null, ts: 0 }
     setStatus('starting')
     setErrorMessage('')
     setLastAdded(null)
@@ -91,11 +99,21 @@ export default function ScanProductDialog({ open, onOpenChange, products, onScan
                 toast.error(`No product matches "${value}"`)
                 return
               }
+
+              const now = Date.now()
+              const isDuplicate = lastScannedRef.current.value === value && now - lastScannedRef.current.ts < DUPLICATE_COOLDOWN_MS
               handledRef.current = true
-              playBeep()
-              onScan(product)
-              setLastAdded({ id: product.id, name: product.name, ts: Date.now() })
-              setScanCount((n) => n + 1)
+              lastScannedRef.current = { value, ts: now }
+
+              if (isDuplicate) {
+                playDuplicateBeep()
+                setLastAdded({ id: product.id, name: product.name, ts: now, duplicate: true })
+              } else {
+                playBeep()
+                onScan(product)
+                setScanCount((n) => n + 1)
+                setLastAdded({ id: product.id, name: product.name, ts: now, duplicate: false })
+              }
 
               clearTimeout(feedbackTimerRef.current)
               feedbackTimerRef.current = setTimeout(() => {
@@ -146,7 +164,7 @@ export default function ScanProductDialog({ open, onOpenChange, products, onScan
           <DialogDescription>
             {status === 'error'
               ? 'Camera unavailable'
-              : 'Point the camera at a product’s QR/barcode label — it adds to the cart automatically. Keep scanning for more items, then tap Done.'}
+              : 'Point the camera at a product’s QR/barcode label — it adds to the cart automatically. Move to the next item after each scan; the same label held in view won’t be added twice.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -156,10 +174,18 @@ export default function ScanProductDialog({ open, onOpenChange, products, onScan
           {lastAdded && (
             <div
               key={lastAdded.ts}
-              className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-emerald-600/90 text-white animate-in fade-in-0 zoom-in-95 duration-150"
+              className={cn(
+                'absolute inset-0 flex flex-col items-center justify-center gap-2 text-white animate-in fade-in-0 zoom-in-95 duration-150',
+                lastAdded.duplicate ? 'bg-amber-600/90' : 'bg-emerald-600/90'
+              )}
             >
-              <CheckCircle2 className="h-12 w-12" />
-              <p className="px-4 text-center text-sm font-semibold">{lastAdded.name} added</p>
+              {lastAdded.duplicate ? <AlertTriangle className="h-12 w-12" /> : <CheckCircle2 className="h-12 w-12" />}
+              <p className="px-4 text-center text-sm font-semibold">
+                {lastAdded.duplicate ? `${lastAdded.name} already added` : `${lastAdded.name} added`}
+              </p>
+              {lastAdded.duplicate && (
+                <p className="px-4 text-center text-xs text-white/85">Move to the next product to scan again</p>
+              )}
             </div>
           )}
         </div>
